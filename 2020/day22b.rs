@@ -1,15 +1,7 @@
-
-/**
- *
- *
- */
-
 use std::io;
 use std::io::prelude::*;
 use std::collections::VecDeque;
-use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
 
 type Card = usize;
 
@@ -18,44 +10,38 @@ enum Winner {
     Player2(VecDeque<Card>),
 }
 
-fn get_hash(deck: &VecDeque<Card>) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    deck.hash(&mut hasher);
-    hasher.finish()
-}
-
-fn play_game(mut p1_deck: VecDeque<Card>, mut p2_deck: VecDeque<Card>, depth: usize) -> Winner {
-    // let p1_starting = p1_deck.clone();
-    // let p2_starting = p2_deck.clone();
+fn play_game(mut p1_deck: VecDeque<Card>, mut p2_deck: VecDeque<Card>) -> Winner {
     let mut p1_hashes = HashSet::new();
     let mut p2_hashes = HashSet::new();
-    println!("Game hash in depth {} is {:?} {:?}", depth, p1_deck, p2_deck);
 
-    let mut i = 0;
     while !p1_deck.is_empty() && !p2_deck.is_empty() {
         if p1_hashes.contains(&p1_deck) || p2_hashes.contains(&p2_deck) {
-            println!("Here with i = {}, depth is {}", i, depth);
-
             return Winner::Player1(p1_deck);
         }
         p1_hashes.insert(p1_deck.clone());
         p2_hashes.insert(p2_deck.clone());
-        /*
-        if p1_hashes.contains(&get_hash(&p1_deck)) || p2_hashes.contains(&get_hash(&p2_deck)) {
-            println!("Here with i = {}, depth is {}", i, depth);
-
-            return Winner::Player1(p1_deck);
-        }
-        p1_hashes.insert(get_hash(&p1_deck));
-        p2_hashes.insert(get_hash(&p2_deck));
-        */
 
         let p1_card = p1_deck.pop_front().unwrap();
         let p2_card = p2_deck.pop_front().unwrap();
 
-        let p1_winner = if p1_deck.len() < p1_card || p2_deck.len() < p2_card { p1_card > p2_card }
-                        else if let Winner::Player1(_) = play_game(p1_deck.clone(), p2_deck.clone(), depth + 1) { true }
-                        else { false };
+        let p1_winner = if p1_deck.len() < p1_card || p2_deck.len() < p2_card {
+            p1_card > p2_card
+        } else {
+            let p1_cloned = p1_deck.iter()
+                .take(p1_card)
+                .map(ToOwned::to_owned)
+                .collect();
+
+            let p2_cloned = p2_deck.iter()
+                .take(p2_card)
+                .map(ToOwned::to_owned)
+                .collect();
+
+            match play_game(p1_cloned, p2_cloned) {
+                Winner::Player1(_) => true,
+                Winner::Player2(_) => false,
+            }
+        };
 
         if p1_winner {
             p1_deck.push_back(p1_card);
@@ -64,7 +50,6 @@ fn play_game(mut p1_deck: VecDeque<Card>, mut p2_deck: VecDeque<Card>, depth: us
             p2_deck.push_back(p2_card);
             p2_deck.push_back(p1_card);
         }
-        i += 1;
     }
     if p1_deck.is_empty() {
         Winner::Player2(p2_deck)
@@ -91,18 +76,14 @@ fn main() {
         .collect();
 
 
-    let mut winner_name: &'static str = "Player 1";
-    let winner = match play_game(p1_cards, p2_cards, 0) {
-        Winner::Player1(deck) => deck,
-        Winner::Player2(deck) => {
-            winner_name = "Player 2";
-            deck
-        },
+    let (winner, deck) = match play_game(p1_cards, p2_cards) {
+        Winner::Player1(deck) => ("Player 1", deck),
+        Winner::Player2(deck) => ("Player 2", deck),
     };
-    let final_score: usize = winner.iter()
-        .zip((1..=winner.len()).rev())
+    let final_score: usize = deck.iter()
+        .zip((1..=deck.len()).rev())
         .map(|(&card, value)| card * value)
         .sum();
 
-    println!("The winner is {} with a final score of {}", winner_name, final_score);
+    println!("The winner is {} with a final score of {}", winner, final_score);
 }
