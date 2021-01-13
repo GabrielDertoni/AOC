@@ -10,11 +10,6 @@ function print_image(image)
     println(str)
 end
 
-function dbg(inp1, inp2)
-    println("size(inp1) = $(size(inp1)), size(inp2) = $(size(inp2))")
-    return inp2
-end
-
 function main()
     width = 25
     height = 6
