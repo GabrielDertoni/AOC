@@ -115,7 +115,7 @@ function run_op!(state)
     end
 end
 
-# Runs the program untill it halts or it outputs something
+# Runs the program untill it halts
 function run_prg!(state)
     while true
         retr = run_op!(state)
